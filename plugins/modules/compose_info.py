@@ -1,11 +1,14 @@
 #!/usr/bin/python
-
 # Copyright: (c) 2021, Juerg Ritter <jritter@redhat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from ansible.module_utils.basic import AnsibleModule
+"""
+Ansible Module for querying osbuild composes
+"""
 
 from composer import http_client as client
+from ansible.module_utils.basic import AnsibleModule
+
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -65,7 +68,8 @@ results:
 SOCKET = '/run/weldr/api.socket'
 
 def run_module():
-
+    """Module main function
+    """
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
         status=dict(type='str', required=False, default='all'),
@@ -99,13 +103,13 @@ def run_module():
     ret = []
 
     if module.params['status'] == 'all' or module.params['status'] == 'running':
-        [ret.append(x) for x in client.get_url_json(SOCKET, '/api/v1/compose/queue')['run']]
+        ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['run']
     if module.params['status'] == 'all' or module.params['status'] == 'waiting':
-        [ret.append(x) for x in client.get_url_json(SOCKET, '/api/v1/compose/queue')['new']]
+        ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['new']
     if module.params['status'] == 'all' or module.params['status'] == 'finished':
-        [ret.append(x) for x in client.get_url_json(SOCKET, '/api/v1/compose/finished')['finished']]
+        ret += client.get_url_json(SOCKET, '/api/v1/compose/finished')['finished']
     if module.params['status'] == 'all' or module.params['status'] == 'failed':
-        [ret.append(x) for x in client.get_url_json(SOCKET, '/api/v1/compose/failed')['failed']]
+        ret += client.get_url_json(SOCKET, '/api/v1/compose/failed')['failed']
 
     result['results'] = ret
 
@@ -114,6 +118,8 @@ def run_module():
     module.exit_json(**result)
 
 def main():
+    """main
+    """
     run_module()
 
 if __name__ == '__main__':
