@@ -32,6 +32,10 @@ options:
         description:
             - Filter for states, can be all, running, finished, queued or failed
         required: false
+    id:
+        description:
+            - Specifies the ID of a specific compose to get detailed information
+        required: false
 
 author:
     - Juerg Ritter (@juergritter)
@@ -45,7 +49,7 @@ EXAMPLES = '''
 
 - name: show composes
   debug:
-    var: composes.results
+    var: composes
 
 # Get all finished composes
 - name: get finished osbuild composes
@@ -55,7 +59,17 @@ EXAMPLES = '''
 
 - name: show composes
   debug:
-    var: composes.results
+    var: composes
+
+# Get detailed information of compose 19ea67c1-39d7-4b81-8690-2c89f10b3e9a
+- name: get detail info of compose
+  jritter.osbuild.compose_info:
+    id: 19ea67c1-39d7-4b81-8690-2c89f10b3e9a
+  register: compose
+
+- name: show compose
+  debug:
+    var: compose
 '''
 
 RETURN = '''
@@ -73,6 +87,7 @@ def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
         status=dict(type='str', required=False, default='all'),
+        id=dict(type='str', required=False)
     )
 
     # seed the result dict in the object
@@ -82,7 +97,7 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        results=''
+        ansible_module_results=''
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -100,18 +115,22 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    ret = []
+    if module.params['id']:
+        ret = client.get_url_json(SOCKET, '/api/v1/compose/info/' + module.params['id'])
+        if 'errors' in ret.keys():
+            result['failed'] = True
+    else:
+        ret = []
+        if module.params['status'] == 'all' or module.params['status'] == 'running':
+            ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['run']
+        if module.params['status'] == 'all' or module.params['status'] == 'waiting':
+            ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['new']
+        if module.params['status'] == 'all' or module.params['status'] == 'finished':
+            ret += client.get_url_json(SOCKET, '/api/v1/compose/finished')['finished']
+        if module.params['status'] == 'all' or module.params['status'] == 'failed':
+            ret += client.get_url_json(SOCKET, '/api/v1/compose/failed')['failed']
 
-    if module.params['status'] == 'all' or module.params['status'] == 'running':
-        ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['run']
-    if module.params['status'] == 'all' or module.params['status'] == 'waiting':
-        ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['new']
-    if module.params['status'] == 'all' or module.params['status'] == 'finished':
-        ret += client.get_url_json(SOCKET, '/api/v1/compose/finished')['finished']
-    if module.params['status'] == 'all' or module.params['status'] == 'failed':
-        ret += client.get_url_json(SOCKET, '/api/v1/compose/failed')['failed']
-
-    result['results'] = ret
+    result['ansible_module_results'] = ret
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
