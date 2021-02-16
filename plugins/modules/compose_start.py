@@ -3,11 +3,12 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 """
-Ansible Module for querying osbuild composes
+Ansible Module for starting an osbuild
 """
 
 from composer import http_client as client
 from ansible.module_utils.basic import AnsibleModule
+import json
 
 
 ANSIBLE_METADATA = {
@@ -18,62 +19,53 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: compose_info
+module: compose_start
 
-short_description: Query osbuild composes
+short_description: Start osbuild composes
 
 version_added: "2.9"
 
 description:
-    - "This module can be used to query osbuild composes"
+    - "This module can be used to start osbuild composes"
 
 options:
-    status:
+    blueprint_name:
         description:
-            - Filter for states, can be all, running, finished, queued or failed
-        required: false
-        choices: ["all", "running", "finished", "queued", "failed"]
+            - Blueprint which will be used for image creation
+        required: true
         type: str
-        default: "all"
-    id:
+    compose_type:
         description:
-            - Specifies the ID of a specific compose to get detailed information
+            - Specifies the type of the image which should be built (e.g. openstack, qcow2, rhel-edge-commit, etc.).
+            - Invoke ´composer-cli compose types´ for all types
+        required: true
+        type: str
+    ref: 
+        description:
+            - "Applicable only for ostree based builds (fedora-iot-commit, rhel-edge-commit): Speci fies the ostree ref."
         required: false
         type: str
+        default: "rhel/8/x86_64/edge"
+    parent:
+        description:
+            - "Applicable only for ostree based builds (fedora-iot-commit, rhel-edge-commit): Specifies the parent commit of the build."
+        type: str
+        required: false
+        default: ""
 
 author:
-    - Juerg Ritter (@juergritter)
+    - "Juerg Ritter (@juergritter)"
+
 '''
 
 EXAMPLES = '''
-# Get all composes
-- name: get all osbuild composes
-  jritter.osbuild.compose_info:
-  register: composes
-
-- name: show composes
-  debug:
-    var: composes
-
-# Get all finished composes
-- name: get finished osbuild composes
-  jritter.osbuild.compose_info:
-    status: finished
-  register: composes
-
-- name: show composes
-  debug:
-    var: composes
-
-# Get detailed information of compose 19ea67c1-39d7-4b81-8690-2c89f10b3e9a
-- name: get detail info of compose
-  jritter.osbuild.compose_info:
-    id: 19ea67c1-39d7-4b81-8690-2c89f10b3e9a
+# Start ostree compose
+- name: start osbuild compose
+  jritter.osbuild.compose_start:
+    blueprint_name: myblueprint
+    compose_type: rhel-edge-commit
   register: compose
 
-- name: show compose
-  debug:
-    var: compose
 '''
 
 RETURN = '''
@@ -90,8 +82,10 @@ def run_module():
     """
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        status=dict(type='str', required=False, default='all'),
-        id=dict(type='str', required=False)
+        blueprint_name=dict(type='str', required=True),
+        compose_type=dict(type='str', required=True),
+        ref=dict(type='str', required=False, default='rhel/8/x86_64/edge'),
+        parent=dict(type='str', required=False, default=''),
     )
 
     # seed the result dict in the object
@@ -119,21 +113,13 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    if module.params['id']:
-        ret = client.get_url_json(SOCKET, '/api/v1/compose/info/' + module.params['id'])
-        if 'errors' in ret.keys():
-            result['failed'] = True
-    else:
-        ret = []
-        if module.params['status'] == 'all' or module.params['status'] == 'running':
-            ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['run']
-        if module.params['status'] == 'all' or module.params['status'] == 'waiting':
-            ret += client.get_url_json(SOCKET, '/api/v1/compose/queue')['new']
-        if module.params['status'] == 'all' or module.params['status'] == 'finished':
-            ret += client.get_url_json(SOCKET, '/api/v1/compose/finished')['finished']
-        if module.params['status'] == 'all' or module.params['status'] == 'failed':
-            ret += client.get_url_json(SOCKET, '/api/v1/compose/failed')['failed']
-
+    compose_params = {
+        'blueprint_name': module.params['blueprint_name'],
+        'compose_type': module.params['compose_type'],
+        'ref': module.params['ref'],
+        'parent': module.params['parent']
+    }
+    ret = client.post_url_json(SOCKET, '/api/v1/compose', json.dumps(compose_params))
     result['ansible_module_results'] = ret
 
     # in the event of a successful module execution, you will want to
