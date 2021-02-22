@@ -6,11 +6,11 @@
 Ansible Module for downloading an image built with osbuild
 """
 
-from composer import http_client as client
-from ansible.module_utils.basic import AnsibleModule
-import json
 import os
+import json
 
+from ansible.module_utils.basic import AnsibleModule
+from composer import http_client as client
 from composer.unix_socket import UnixHTTPConnectionPool
 
 ANSIBLE_METADATA = {
@@ -98,28 +98,29 @@ def run_module():
         module.exit_json(**result)
 
     http = UnixHTTPConnectionPool(SOCKET)
-    r = http.request("GET", '/api/v1/compose/image/' + module.params['id'], preload_content=False)
-    if r.status == 400:
-        err = json.loads(r.data.decode("utf-8"))
+    response = http.request("GET", '/api/v1/compose/image/'
+                            + module.params['id'], preload_content=False)
+    if response.status == 400:
+        err = json.loads(response.data.decode("utf-8"))
         if not err["status"]:
             msgs = [e["msg"] for e in err["errors"]]
             raise RuntimeError(", ".join(msgs))
-    
+
     downloadpath = module.params['dest']
 
     if os.path.isdir(downloadpath):
-        downloadpath = os.path.join(downloadpath, client.get_filename(r.headers))
+        downloadpath = os.path.join(downloadpath, client.get_filename(response.headers))
 
-    with open(downloadpath, "wb") as f:
+    with open(downloadpath, "wb") as image_file:
         while True:
-            data = r.read(10 * 1024**2)
+            data = response.read(10 * 1024**2)
             if not data:
                 break
-            f.write(data)
+            image_file.write(data)
 
     result['ansible_module_results'] = {
         'dest': downloadpath,
-        'status': r.status
+        'status': response.status
     }
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

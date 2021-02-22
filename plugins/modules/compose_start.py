@@ -6,10 +6,11 @@
 Ansible Module for starting an osbuild
 """
 
+import json
+import time
+
 from composer import http_client as client
 from ansible.module_utils.basic import AnsibleModule
-import json
-
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -52,6 +53,12 @@ options:
         type: str
         required: false
         default: ""
+    wait:
+        desctiption:
+            - "waits for the image build to complete before returning"
+        type: boolean
+        required: false
+        default: no
 
 author:
     - "Juerg Ritter (@juergritter)"
@@ -86,6 +93,7 @@ def run_module():
         compose_type=dict(type='str', required=True),
         ref=dict(type='str', required=False, default='rhel/8/x86_64/edge'),
         parent=dict(type='str', required=False, default=''),
+        wait=dict(type='bool', required=False, default=False),
     )
 
     # seed the result dict in the object
@@ -94,7 +102,7 @@ def run_module():
     # state will include any data that you want your module to pass back
     # for consumption, for example, in a subsequent task
     result = dict(
-        changed=False,
+        changed=True,
         ansible_module_results=''
     )
 
@@ -120,8 +128,20 @@ def run_module():
         'parent': module.params['parent']
     }
     ret = client.post_url_json(SOCKET, '/api/v1/compose', json.dumps(compose_params))
-    result['ansible_module_results'] = ret
+    build_id = ret['build_id']
+    if module.params['wait']:
+        while True:
+            ret = client.get_url_json(SOCKET, '/api/v1/compose/info/' + build_id)
+            if ret['queue_status'] not in ('RUNNING', 'QUEUED'):
+                break
+            time.sleep(1)
 
+
+    result['ansible_module_results'] = client.get_url_json(SOCKET,
+                                        '/api/v1/compose/info/' + build_id)
+
+    if result['ansible_module_results']['queue_status'] == 'FAILED':
+        result['failed'] = True
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)

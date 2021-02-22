@@ -1,50 +1,3 @@
-# Ansible Collection - jritter.osbuild
-
-This collection provides a set of modules in order to interact with the osbuild composer API. It is designed with the composer-cli tool in mind. The module uses the same python client module. The communication goes through the Weldr UNIX Socket REST API. The modules can be used in place of the composer-cli tool, or the cockpit-composer Plugin for Cockpit.
-
-## Disclaimer
-
-This collection is in a very early stage of development. It has only been tested using Ansible 2.9 on a Red Hat Enterprise Linux 8 image builder host. Feel free to create a ticket on GitHub in case of comments and problems:
-
-https://github.com/jritter/ansible-collection-osbuild/issues
-
-
-## Installation
-
-The collection can be installed using the following command:
-
-```
-$ ansible-galaxy collection install jritter.osbuild
-```
-
-## Prerequisites
-
-The Ansible target node must have osbuild-composer and composer-cli installed.
-
-## Example Blueprint
-
-```
-$ cat files/myblueprint.toml
-name = "myblueprint"
-description = "My Blueprint"
-version = "0.0.1"
-modules = []
-groups = []
-
-[[packages]]
-name = "curl"
-version = "*"
-
-[[packages]]
-name = "podman"
-version = "*"
-
-```
-
-## Example Playbook
-
-
-```yaml
 - name: osbuild collection example playbook
   hosts: control  # The playbook has to target hosts with osbuild-composer installed
   gather_facts: no # you can if you want to, but not necessary
@@ -106,10 +59,3 @@ version = "*"
     debug:
       var: composes
 
-```
-
-
-## References
-
-- https://github.com/osbuild/osbuild-composer
-- https://www.osbuild.org/

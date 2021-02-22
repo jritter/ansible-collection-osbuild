@@ -1,0 +1,15 @@
+name = "myblueprint"
+description = "My Blueprint"
+version = "0.0.1"
+modules = []
+groups = []
+
+[[packages]]
+name = "curl"
+version = "*"
+
+[[packages]]
+name = "podman"
+version = "*"
+
+
