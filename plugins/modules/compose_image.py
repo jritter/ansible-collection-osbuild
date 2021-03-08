@@ -57,7 +57,7 @@ EXAMPLES = '''
 RETURN = '''
 ansible_module_results:
     status: HTTP status code of the API
-    dest: Filename of the 
+    dest: Destination for the downloaded image
     returned: always
 '''
 
