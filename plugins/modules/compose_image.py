@@ -37,8 +37,8 @@ options:
         required: true
     dest:
         description:
-            - Specifies the path where the downloaded image should be saved. 
-            - If the path is the directory, the filename will be defined as returned by the composer API. 
+            - Specifies the path where the downloaded image should be saved.
+            - If the path is the directory, the filename will be defined as returned by the composer API.
             - If a filename is specified, the image will be written to this file.
         required: true
 
@@ -62,6 +62,7 @@ ansible_module_results:
 '''
 
 SOCKET = '/run/weldr/api.socket'
+
 
 def run_module():
     """Module main function
@@ -126,10 +127,12 @@ def run_module():
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
+
 def main():
     """main
     """
     run_module()
+
 
 if __name__ == '__main__':
     main()

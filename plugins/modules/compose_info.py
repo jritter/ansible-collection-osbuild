@@ -85,6 +85,7 @@ results:
 
 SOCKET = '/run/weldr/api.socket'
 
+
 def run_module():
     """Module main function
     """
@@ -140,10 +141,12 @@ def run_module():
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
+
 def main():
     """main
     """
     run_module()
+
 
 if __name__ == '__main__':
     main()

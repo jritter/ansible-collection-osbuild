@@ -41,7 +41,7 @@ options:
             - Invoke ´composer-cli compose types´ for all types
         required: true
         type: str
-    ref: 
+    ref:
         description:
             - "Applicable only for ostree based builds (fedora-iot-commit, rhel-edge-commit): Speci fies the ostree ref."
         required: false
@@ -83,6 +83,7 @@ results:
 '''
 
 SOCKET = '/run/weldr/api.socket'
+
 
 def run_module():
     """Module main function
@@ -136,9 +137,8 @@ def run_module():
                 break
             time.sleep(1)
 
-
     result['ansible_module_results'] = client.get_url_json(SOCKET,
-                                        '/api/v1/compose/info/' + build_id)
+                                                           '/api/v1/compose/info/' + build_id)
 
     if result['ansible_module_results']['queue_status'] == 'FAILED':
         result['failed'] = True
@@ -146,10 +146,12 @@ def run_module():
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
+
 def main():
     """main
     """
     run_module()
+
 
 if __name__ == '__main__':
     main()

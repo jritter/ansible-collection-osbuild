@@ -74,6 +74,7 @@ results:
 
 SOCKET = '/run/weldr/api.socket'
 
+
 def run_module():
     """Module main function
     """
@@ -132,7 +133,6 @@ def run_module():
         # The composer.http_client throws a Runtime Error if the API returns 400
         blueprint_present = False
 
-
     if module.params['state'] == 'present' and not blueprint_present:
         result['ansible_module_results'] = client.post_url_toml(SOCKET,
                 '/api/v1/blueprints/new', module.params['definition'])
@@ -140,8 +140,8 @@ def run_module():
                 '/api/v1/blueprints/info/' + blueprint_name + '?format=toml')
         result['changed'] = True
     elif module.params['state'] == 'present' \
-        and blueprint_present \
-        and available_blueprint != module.params['definition']:
+                                and blueprint_present \
+                                and available_blueprint != module.params['definition']:
         result['ansible_module_results'] = client.post_url_toml(SOCKET,
                 '/api/v1/blueprints/new', module.params['definition'])
         result['ansible_module_results']['definition'] = client.get_url_raw(SOCKET,
@@ -156,15 +156,16 @@ def run_module():
                 '/api/v1/blueprints/info/' + blueprint_name + '?format=toml')
         result['changed'] = False
 
-
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
+
 
 def main():
     """main
     """
     run_module()
+
 
 if __name__ == '__main__':
     main()
